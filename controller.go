@@ -1,9 +1,13 @@
 package cbyge
 
 import (
+	"bufio"
 	"encoding/binary"
+	"fmt"
 	"math/rand"
+	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -118,9 +122,23 @@ func NewControllerLogin(email, password string) (*Controller, error) {
 // Login creates a new authentication token on the session using the username
 // and password.
 func (c *Controller) Login(email, password string) error {
-	info, err := Login(email, password, "")
+	// info, err := Login(email, password, "")
+	// if err != nil {
+	// 	return errors.Wrap(err, "login controller")
+	// }
+	err := Login2FAStage1(email, "")
 	if err != nil {
-		return errors.Wrap(err, "login controller")
+		return errors.Wrap(err, "login controller stage 1")
+	}
+	fmt.Print("Enter verification code: ")
+	r := bufio.NewReader(os.Stdin)
+	code, err := r.ReadString('\n')
+	if err != nil {
+		return errors.Wrap(err, "reading verification code")
+	}
+	info, err := Login2FAStage2(email, password, "", strings.TrimSpace(code))
+	if err != nil {
+		return errors.Wrap(err, "login controller stage 2")
 	}
 	c.sessionInfoLock.Lock()
 	c.sessionInfo = info
